@@ -6,34 +6,28 @@ import (
 	"time"
 )
 
-// Service handles business logic for events
 type Service struct {
 	repo *Repository
 }
 
-// NewService creates a new event service
 func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-// CreateEvent validates and creates a new event
 func (s *Service) CreateEvent(ctx context.Context, req *CreateEventRequest, organizerID int) (*Event, error) {
-	// Validate required fields
+	
 	if err := s.validateCreateRequest(req); err != nil {
 		return nil, err
 	}
 
-	// Validate date and time formats
 	if err := s.validateDateTime(req.Date, req.Time); err != nil {
 		return nil, err
 	}
 
-	// Parse dates to ensure the event is in the future
 	if err := s.validateFutureEvent(req.Date, req.Time); err != nil {
 		return nil, err
 	}
 
-	// Parse date and time strings
 	eventDate, err := time.Parse("2006-01-02", req.Date)
 	if err != nil {
 		return nil, fmt.Errorf("invalid date format: %w", err)
@@ -65,7 +59,6 @@ func (s *Service) CreateEvent(ctx context.Context, req *CreateEventRequest, orga
 	return event, nil
 }
 
-// GetEventByID retrieves an event by ID
 func (s *Service) GetEventByID(ctx context.Context, eventID int) (*Event, error) {
 	if eventID <= 0 {
 		return nil, fmt.Errorf("invalid event ID")
@@ -79,7 +72,6 @@ func (s *Service) GetEventByID(ctx context.Context, eventID int) (*Event, error)
 	return event, nil
 }
 
-// GetAllEvents retrieves all events
 func (s *Service) GetAllEvents(ctx context.Context) ([]Event, error) {
 	events, err := s.repo.GetAllEvents(ctx)
 	if err != nil {
@@ -94,7 +86,6 @@ func (s *Service) GetAllEvents(ctx context.Context) ([]Event, error) {
 	return events, nil
 }
 
-// GetEventsByOrganizerID retrieves all events created by a specific user
 func (s *Service) GetEventsByOrganizerID(ctx context.Context, organizerID int) ([]Event, error) {
 	if organizerID <= 0 {
 		return nil, fmt.Errorf("invalid organizer ID")
@@ -104,8 +95,6 @@ func (s *Service) GetEventsByOrganizerID(ctx context.Context, organizerID int) (
 	if err != nil {
 		return nil, err
 	}
-
-	// Return empty slice instead of nil for JSON response
 	if events == nil {
 		events = []Event{}
 	}
@@ -113,24 +102,20 @@ func (s *Service) GetEventsByOrganizerID(ctx context.Context, organizerID int) (
 	return events, nil
 }
 
-// UpdateEvent validates and updates an event
 func (s *Service) UpdateEvent(ctx context.Context, eventID int, req *UpdateEventRequest, organizerID int) (*Event, error) {
 	if eventID <= 0 {
 		return nil, fmt.Errorf("invalid event ID")
 	}
 
-	// Get the event to check ownership
 	event, err := s.repo.GetEventByID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check if the user is the organizer
 	if event.OrganizerID != organizerID {
 		return nil, fmt.Errorf("you are not authorized to update this event")
 	}
 
-	// Validate date and time if provided
 	if req.Date != "" && req.Time != "" {
 		if err := s.validateDateTime(req.Date, req.Time); err != nil {
 			return nil, err
@@ -156,19 +141,16 @@ func (s *Service) UpdateEvent(ctx context.Context, eventID int, req *UpdateEvent
 	return updatedEvent, nil
 }
 
-// DeleteEvent validates and deletes an event
 func (s *Service) DeleteEvent(ctx context.Context, eventID int, organizerID int) error {
 	if eventID <= 0 {
 		return fmt.Errorf("invalid event ID")
 	}
 
-	// Get the event to check ownership
 	event, err := s.repo.GetEventByID(ctx, eventID)
 	if err != nil {
 		return err
 	}
 
-	// Check if the user is the organizer
 	if event.OrganizerID != organizerID {
 		return fmt.Errorf("you are not authorized to delete this event")
 	}
@@ -179,8 +161,6 @@ func (s *Service) DeleteEvent(ctx context.Context, eventID int, organizerID int)
 
 	return nil
 }
-
-// Validation helper functions
 
 func (s *Service) validateCreateRequest(req *CreateEventRequest) error {
 	if req.Title == "" {
@@ -251,7 +231,7 @@ func (s *Service) validateFutureEvent(date, timeStr string) error {
 	return nil
 }
 
-// JoinEvent allows a user to join an event as an attendee
+// allows a user to join an event as an attendee
 func (s *Service) JoinEvent(ctx context.Context, userID, eventID int) error {
 	if userID <= 0 {
 		return fmt.Errorf("invalid user ID")
@@ -274,7 +254,7 @@ func (s *Service) JoinEvent(ctx context.Context, userID, eventID int) error {
 	return nil
 }
 
-// GetMyAttendingEvents retrieves all events where the user is an attendee (including as organizer)
+// retrieves all events where the user is an attendee
 func (s *Service) GetMyAttendingEvents(ctx context.Context, userID int) ([]EventWithAttendeeInfo, error) {
 	if userID <= 0 {
 		return nil, fmt.Errorf("invalid user ID")
@@ -285,7 +265,6 @@ func (s *Service) GetMyAttendingEvents(ctx context.Context, userID int) ([]Event
 		return nil, err
 	}
 
-	// Return empty slice instead of nil for JSON response
 	if events == nil {
 		events = []EventWithAttendeeInfo{}
 	}
@@ -293,7 +272,7 @@ func (s *Service) GetMyAttendingEvents(ctx context.Context, userID int) ([]Event
 	return events, nil
 }
 
-// InviteUserToEvent invites a user to an event (only event creator can invite)
+//invites a user to an event
 func (s *Service) InviteUserToEvent(ctx context.Context, eventID, inviterID int, req *AddAttendeeRequest) error {
 	if eventID <= 0 {
 		return fmt.Errorf("invalid event ID")
@@ -307,12 +286,11 @@ func (s *Service) InviteUserToEvent(ctx context.Context, eventID, inviterID int,
 		return fmt.Errorf("invalid user ID")
 	}
 
-	// Validate role - allowing 'organizer' role for co-organizers
+	// Validate role
 	if req.Role != "attendee" && req.Role != "collaborator" && req.Role != "organizer" {
 		return fmt.Errorf("invalid role: must be 'attendee', 'collaborator', or 'organizer'")
 	}
 
-	// Check if event exists and get event details
 	event, err := s.repo.GetEventByID(ctx, eventID)
 	if err != nil {
 		return fmt.Errorf("event not found")
@@ -335,7 +313,6 @@ func (s *Service) InviteUserToEvent(ctx context.Context, eventID, inviterID int,
 	return nil
 }
 
-// UpdateAttendanceStatus updates a user's attendance status for an event
 func (s *Service) UpdateAttendanceStatus(ctx context.Context, userID, eventID int, status string) error {
 	if userID <= 0 {
 		return fmt.Errorf("invalid user ID")
@@ -365,7 +342,6 @@ func (s *Service) UpdateAttendanceStatus(ctx context.Context, userID, eventID in
 	return nil
 }
 
-// GetEventAttendees retrieves all attendees for an event
 func (s *Service) GetEventAttendees(ctx context.Context, eventID int) ([]EventAttendee, error) {
 	if eventID <= 0 {
 		return nil, fmt.Errorf("invalid event ID")
@@ -376,7 +352,6 @@ func (s *Service) GetEventAttendees(ctx context.Context, eventID int) ([]EventAt
 		return nil, err
 	}
 
-	// Return empty slice instead of nil for JSON response
 	if attendees == nil {
 		attendees = []EventAttendee{}
 	}
@@ -384,7 +359,6 @@ func (s *Service) GetEventAttendees(ctx context.Context, eventID int) ([]EventAt
 	return attendees, nil
 }
 
-// GetMyOrganizedEvents retrieves all events organized by a specific user
 func (s *Service) GetMyOrganizedEvents(ctx context.Context, organizerID int) ([]Event, error) {
 	if organizerID <= 0 {
 		return nil, fmt.Errorf("invalid organizer ID")
@@ -395,10 +369,10 @@ func (s *Service) GetMyOrganizedEvents(ctx context.Context, organizerID int) ([]
 		return nil, err
 	}
 
-	// Return empty slice instead of nil for JSON response
 	if events == nil {
 		events = []Event{}
 	}
 
 	return events, nil
 }
+
