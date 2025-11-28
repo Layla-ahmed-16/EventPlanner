@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Repository handles DB operations for searching events
 type Repository struct {
 	db *pgxpool.Pool
 }
@@ -18,7 +17,6 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
-// SearchEvents searches events for a given user with filters
 func (r *Repository) SearchEvents(ctx context.Context, f *EventsFilter) ([]event.EventWithAttendeeInfo, error) {
 	query := `
 		SELECT 
@@ -40,7 +38,6 @@ func (r *Repository) SearchEvents(ctx context.Context, f *EventsFilter) ([]event
 	args := []interface{}{f.UserID}
 	argIdx := 2
 
-	// Keyword filter (title / description)
 	if f.Query != "" {
 		query += fmt.Sprintf(" AND (e.title ILIKE $%d OR e.description ILIKE $%d)", argIdx, argIdx+1)
 		likeVal := "%" + f.Query + "%"
@@ -48,14 +45,12 @@ func (r *Repository) SearchEvents(ctx context.Context, f *EventsFilter) ([]event
 		argIdx += 2
 	}
 
-	// Date from
 	if f.DateFrom != "" {
 		query += fmt.Sprintf(" AND e.date >= $%d", argIdx)
 		args = append(args, f.DateFrom)
 		argIdx++
 	}
 
-	// Date to
 	if f.DateTo != "" {
 		query += fmt.Sprintf(" AND e.date <= $%d", argIdx)
 		args = append(args, f.DateTo)
@@ -114,3 +109,4 @@ func (r *Repository) SearchEvents(ctx context.Context, f *EventsFilter) ([]event
 
 	return eventsWithInfo, nil
 }
+
