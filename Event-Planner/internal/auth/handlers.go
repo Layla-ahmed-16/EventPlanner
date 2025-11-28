@@ -17,7 +17,7 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-// Register handles user registration
+//user registration
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var req user.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -25,7 +25,6 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Basic validation
 	if req.Email == "" || req.Password == "" {
 		http.Error(w, "Email and password are required", http.StatusBadRequest)
 		return
@@ -53,7 +52,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(authResp)
 }
 
-// Login handles user authentication
+//user authentication
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req user.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -61,7 +60,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Basic validation
 	if req.Email == "" || req.Password == "" {
 		http.Error(w, "Email and password are required", http.StatusBadRequest)
 		return
@@ -105,3 +103,4 @@ func (h *Handler) AuthMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
+
