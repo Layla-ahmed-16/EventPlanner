@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 
@@ -37,7 +38,14 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	authResp, err := h.service.Register(r.Context(), req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Register error: %v\n", err)
+
+		if strings.Contains(err.Error(), "already exists") {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		http.Error(w, "failed to register user", http.StatusInternalServerError)
 		return
 	}
 
@@ -69,7 +77,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(authResp)
 }
 
-// AuthMiddleware validates JWT tokens
+//validate JWT tokens
 func (h *Handler) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
@@ -78,7 +86,7 @@ func (h *Handler) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Extract token from "Bearer <token>"
+		// Extract token
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			http.Error(w, "Invalid authorization header format", http.StatusUnauthorized)
@@ -91,7 +99,7 @@ func (h *Handler) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Add user ID to request context for use in handlers
+		// Add user ID to request context
 		ctx := r.Context()
 		ctx = setUserID(ctx, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
