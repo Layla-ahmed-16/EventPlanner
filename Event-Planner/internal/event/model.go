@@ -5,19 +5,18 @@ import (
 	"time"
 )
 
-// Event represents an event in the system
 type Event struct {
 	ID          int       `json:"id"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
-	Date        time.Time `json:"-"` // Will be handled by custom marshaling
-	Time        time.Time `json:"-"` // Will be handled by custom marshaling
+	Date        time.Time `json:"-"` 
+	Time        time.Time `json:"-"` 
 	Location    string    `json:"location"`
 	OrganizerID int       `json:"organizer_id"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// MarshalJSON custom marshaling for Event to format date and time properly
+//format date and time properly
 func (e Event) MarshalJSON() ([]byte, error) {
 	type Alias Event
 	return json.Marshal(&struct {
@@ -31,7 +30,6 @@ func (e Event) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// CreateEventRequest is the request payload for creating an event
 type CreateEventRequest struct {
 	Title       string `json:"title" binding:"required"`
 	Description string `json:"description"`
@@ -40,7 +38,6 @@ type CreateEventRequest struct {
 	Location    string `json:"location" binding:"required"`
 }
 
-// UpdateEventRequest is the request payload for updating an event
 type UpdateEventRequest struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -49,7 +46,6 @@ type UpdateEventRequest struct {
 	Location    string `json:"location"`
 }
 
-// EventAttendee represents an attendee of an event
 type EventAttendee struct {
 	ID        int       `json:"id"`
 	UserID    int       `json:"user_id"`
@@ -59,20 +55,18 @@ type EventAttendee struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// EventWithAttendeeInfo represents an event with the user's attendance info
 type EventWithAttendeeInfo struct {
 	Event
 	Role   string `json:"role"`
 	Status string `json:"status"`
 }
 
-// AddAttendeeRequest is the request payload for inviting someone to an event
 type AddAttendeeRequest struct {
 	UserID int    `json:"user_id" binding:"required"`
 	Role   string `json:"role" binding:"required"` // 'attendee', 'collaborator', or 'organizer'
 }
 
-// UpdateAttendanceRequest is the request payload for updating attendance status
 type UpdateAttendanceRequest struct {
 	Status string `json:"status" binding:"required"` // 'going', 'maybe', 'not_going'
 }
+
