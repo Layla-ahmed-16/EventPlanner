@@ -18,7 +18,6 @@ import (
 )
 
 func main() {
-	// Load .env file
 	_ = godotenv.Load()
 
 	// Connect to PostgreSQL
@@ -28,22 +27,21 @@ func main() {
 	}
 	defer pool.Close()
 
-	// ==== Auth setup (Requirement 1: User Management) ====
+	//User Management
 	authService := auth.NewService(pool)
 	authHandler := auth.NewHandler(authService)
 
-	// ==== Event setup (Requirement 2: Event Management) ====
+	//Event Management
 	eventRepo := event.NewRepository(pool)
 	eventService := event.NewService(eventRepo)
 	eventHandler := event.NewHandler(eventService)
 
-	// ==== Invitation setup (Requirement 3: Response Management / Invitations) ====
-	// Notice: we pass eventRepo as EventAttendeeService so invitations can add attendees on "accepted"
+	//Response Management / Invitations
 	invRepo := invitation.NewRepository(pool)
 	invService := invitation.NewService(invRepo, eventRepo)
 	invHandler := invitation.NewHandler(invService)
 
-	// ==== Search setup (Requirement 4: Search & Filtering) ====
+	// search & Filtering
 	searchRepo := search.NewRepository(pool)
 	searchService := search.NewService(searchRepo)
 	searchHandler := search.NewHandler(searchService)
@@ -72,59 +70,56 @@ func main() {
 		_, _ = w.Write([]byte("Server is running"))
 	})
 
-	// ===== Auth routes =====
+	// Auth routes
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", authHandler.Register)
 		r.Post("/login", authHandler.Login)
 	})
 
-	// ===== Events routes (Req 2) =====
+	// Events routes
 	r.Route("/events", func(r chi.Router) {
 		// Public endpoints (no auth required)
 
 		// GET all events
 		r.Get("/", eventHandler.GetAllEvents)
 
-		// 🔍 Advanced search (Req 4 – uses search package, needs auth)
+		// Advanced search 
 		r.With(authHandler.AuthMiddleware).Get("/search", searchHandler.SearchEvents)
 
-		// GET events by organizer (public)
+		// GET events by organizer
 		r.Get("/organizer/{id}", eventHandler.GetEventsByOrganizer)
 
 		// GET single event by ID (public)
 		r.Get("/{id}", eventHandler.GetEventByID)
 
-		// GET event attendees (public - you can make it protected if you want)
+		// GET event attendees
 		r.Get("/{id}/attendees", eventHandler.GetEventAttendees)
 
-		// GET invitations for an event (protected)
+		// GET invitations for an event
 		r.With(authHandler.AuthMiddleware).Get("/{id}/invitations", invHandler.GetEventInvitations)
 
-		// Protected endpoints (auth required)
-
-		// POST create new event (requires auth)
+		// POST create new event
 		r.With(authHandler.AuthMiddleware).Post("/", eventHandler.CreateEvent)
 
-		// PUT update event (requires auth + ownership)
+		// PUT update event
 		r.With(authHandler.AuthMiddleware).Put("/{id}", eventHandler.UpdateEvent)
 
-		// DELETE event (requires auth + ownership)
+		// DELETE event
 		r.With(authHandler.AuthMiddleware).Delete("/{id}", eventHandler.DeleteEvent)
 
-		// POST join event (requires auth)
+		// POST join event
 		r.With(authHandler.AuthMiddleware).Post("/{id}/join", eventHandler.JoinEvent)
 
-		// POST invite user to event (requires auth, creator only)
+		// POST invite user to event
 		r.With(authHandler.AuthMiddleware).Post("/{id}/invite", eventHandler.InviteUserToEvent)
 
-		// PUT update attendance status (requires auth)
+		// PUT update attendance status
 		r.With(authHandler.AuthMiddleware).Put("/{id}/attendance", eventHandler.UpdateAttendanceStatus)
 
-		// Protected routes for user's own events
 		r.Route("/my", func(r chi.Router) {
 			r.Use(authHandler.AuthMiddleware)
 
-			// GET events I'm attending (as organizer or attendee)
+			// GET events I'm attending
 			r.Get("/attending", eventHandler.GetMyAttendingEvents)
 
 			// GET events I'm organizing
@@ -132,7 +127,7 @@ func main() {
 		})
 	})
 
-	// ===== Invitation routes (Req 3) =====
+	// Invitation routes
 	r.Route("/invitations", func(r chi.Router) {
 		r.Use(authHandler.AuthMiddleware)
 
@@ -146,7 +141,6 @@ func main() {
 		r.Put("/{id}/respond", invHandler.RespondToInvitation)
 	})
 
-	// ===== Example protected API group =====
 	r.Route("/api", func(r chi.Router) {
 		r.Use(authHandler.AuthMiddleware)
 
@@ -171,3 +165,4 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
