@@ -8,16 +8,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// Repository handles all database operations for events
 type Repository struct {
 	db *pgxpool.Pool
 }
 
-//create a new event repository
+// NewRepository creates a new event repository
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
-//insert a new event into the database
+// CreateEvent inserts a new event into the database
 func (r *Repository) CreateEvent(ctx context.Context, event *Event) error {
 	query := `
 		INSERT INTO events (title, description, date, time, location, organizer_id)
@@ -41,6 +42,7 @@ func (r *Repository) CreateEvent(ctx context.Context, event *Event) error {
 	return nil
 }
 
+// GetEventByID retrieves a single event by ID
 func (r *Repository) GetEventByID(ctx context.Context, eventID int) (*Event, error) {
 	query := `
 		SELECT id, title, description, date, time, location, organizer_id, created_at
@@ -67,6 +69,7 @@ func (r *Repository) GetEventByID(ctx context.Context, eventID int) (*Event, err
 	return event, nil
 }
 
+// GetAllEvents retrieves all events from the database
 func (r *Repository) GetAllEvents(ctx context.Context) ([]Event, error) {
 	query := `
 		SELECT id, title, description, date, time, location, organizer_id, created_at
@@ -106,6 +109,7 @@ func (r *Repository) GetAllEvents(ctx context.Context) ([]Event, error) {
 	return events, nil
 }
 
+// GetEventsByOrganizerID retrieves all events created by a specific user
 func (r *Repository) GetEventsByOrganizerID(ctx context.Context, organizerID int) ([]Event, error) {
 	query := `
 		SELECT id, title, description, date, time, location, organizer_id, created_at
@@ -146,13 +150,15 @@ func (r *Repository) GetEventsByOrganizerID(ctx context.Context, organizerID int
 	return events, nil
 }
 
+// UpdateEvent updates an existing event
 func (r *Repository) UpdateEvent(ctx context.Context, eventID int, updates *UpdateEventRequest) (*Event, error) {
-	//get the current event
+	// First, get the current event
 	currentEvent, err := r.GetEventByID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
 
+	// Apply updates (only non-empty fields)
 	if updates.Title != "" {
 		currentEvent.Title = updates.Title
 	}
@@ -209,6 +215,7 @@ func (r *Repository) UpdateEvent(ctx context.Context, eventID int, updates *Upda
 	return currentEvent, nil
 }
 
+// DeleteEvent removes an event from the database
 func (r *Repository) DeleteEvent(ctx context.Context, eventID int) error {
 	query := `DELETE FROM events WHERE id = $1`
 
@@ -224,10 +231,12 @@ func (r *Repository) DeleteEvent(ctx context.Context, eventID int) error {
 	return nil
 }
 
+// JoinEvent adds a user as an attendee to an event
 func (r *Repository) JoinEvent(ctx context.Context, userID, eventID int) error {
 	return r.AddAttendee(ctx, eventID, userID, "attendee")
 }
 
+// GetEventsByAttendeeID retrieves all events where the user is an attendee (including as organizer)
 func (r *Repository) GetEventsByAttendeeID(ctx context.Context, userID int) ([]EventWithAttendeeInfo, error) {
 	query := `
 		SELECT e.id, e.title, e.description, e.date, e.time, e.location, e.organizer_id, e.created_at, ea.role, ea.status
@@ -271,7 +280,7 @@ func (r *Repository) GetEventsByAttendeeID(ctx context.Context, userID int) ([]E
 	return events, nil
 }
 
-// retrieve all events organized by a specific user
+// GetMyOrganizedEvents retrieves all events organized by a specific user
 func (r *Repository) GetMyOrganizedEvents(ctx context.Context, organizerID int) ([]Event, error) {
 	query := `
 		SELECT id, title, description, date, time, location, organizer_id, created_at
@@ -312,12 +321,12 @@ func (r *Repository) GetMyOrganizedEvents(ctx context.Context, organizerID int) 
 	return events, nil
 }
 
-//automatically adds the organizer as an attendee
+// AddOrganizerAsAttendee automatically adds the organizer as an attendee when creating an event
 func (r *Repository) AddOrganizerAsAttendee(ctx context.Context, userID, eventID int) error {
 	return r.AddAttendee(ctx, eventID, userID, "organizer")
 }
 
-//adds a user to an event
+// AddAttendee adds a user to an event (idempotent + updates role if already exists)
 func (r *Repository) AddAttendee(ctx context.Context, eventID, userID int, role string) error {
 	// Check if attendee already exists
 	var exists bool
@@ -354,7 +363,7 @@ func (r *Repository) AddAttendee(ctx context.Context, eventID, userID int, role 
 	return nil
 }
 
-// updates a user's attendance status for an event
+// UpdateAttendanceStatus updates a user's attendance status for an event
 func (r *Repository) UpdateAttendanceStatus(ctx context.Context, userID, eventID int, status string) error {
 	query := `
 		UPDATE event_attendees
@@ -374,6 +383,7 @@ func (r *Repository) UpdateAttendanceStatus(ctx context.Context, userID, eventID
 	return nil
 }
 
+// GetEventAttendees retrieves all attendees for an event
 func (r *Repository) GetEventAttendees(ctx context.Context, eventID int) ([]EventAttendee, error) {
 	query := `
 		SELECT id, user_id, event_id, role, status, created_at
@@ -411,4 +421,3 @@ func (r *Repository) GetEventAttendees(ctx context.Context, eventID int) ([]Even
 
 	return attendees, nil
 }
-

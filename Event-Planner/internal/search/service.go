@@ -8,6 +8,7 @@ import (
 	"event-planner/internal/event"
 )
 
+// Service handles business logic for search
 type Service struct {
 	repo *Repository
 }
@@ -16,11 +17,13 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
+// SearchEvents searches events for the current user with filters
 func (s *Service) SearchEvents(ctx context.Context, f *EventsFilter) ([]event.EventWithAttendeeInfo, error) {
 	if f.UserID <= 0 {
 		return nil, fmt.Errorf("invalid user ID")
 	}
 
+	// Validate role if provided
 	if f.Role != "" {
 		validRoles := map[string]bool{
 			"organizer":    true,
@@ -32,6 +35,7 @@ func (s *Service) SearchEvents(ctx context.Context, f *EventsFilter) ([]event.Ev
 		}
 	}
 
+	// Validate status if provided
 	if f.Status != "" {
 		validStatuses := map[string]bool{
 			"going":     true,
@@ -43,6 +47,7 @@ func (s *Service) SearchEvents(ctx context.Context, f *EventsFilter) ([]event.Ev
 		}
 	}
 
+	// Validate dates if provided
 	if f.DateFrom != "" {
 		if _, err := time.Parse("2006-01-02", f.DateFrom); err != nil {
 			return nil, fmt.Errorf("invalid date_from format, use YYYY-MM-DD")
@@ -65,4 +70,3 @@ func (s *Service) SearchEvents(ctx context.Context, f *EventsFilter) ([]event.Ev
 
 	return events, nil
 }
-

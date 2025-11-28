@@ -8,14 +8,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// Repository handles all database operations for invitations
 type Repository struct {
 	db *pgxpool.Pool
 }
 
+// NewRepository creates a new invitation repository
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
+// SendInvitation creates a new invitation
 func (r *Repository) SendInvitation(ctx context.Context, invitation *Invitation) error {
 	query := `
         INSERT INTO invitations (event_id, inviter_id, invitee_email, invitee_id, role, message)
@@ -39,6 +42,7 @@ func (r *Repository) SendInvitation(ctx context.Context, invitation *Invitation)
 	return nil
 }
 
+// GetInvitationByID retrieves a single invitation by ID
 func (r *Repository) GetInvitationByID(ctx context.Context, invitationID int) (*Invitation, error) {
 	query := `
         SELECT id, event_id, inviter_id, invitee_email, invitee_id, role, status, message, created_at, responded_at
@@ -67,6 +71,7 @@ func (r *Repository) GetInvitationByID(ctx context.Context, invitationID int) (*
 	return invitation, nil
 }
 
+// GetInvitationsByEmail retrieves all invitations for a specific email
 func (r *Repository) GetInvitationsByEmail(ctx context.Context, email string) ([]InvitationWithDetails, error) {
 	query := `
         SELECT 
@@ -135,6 +140,7 @@ func (r *Repository) GetInvitationsByEmail(ctx context.Context, email string) ([
 	return invitations, nil
 }
 
+// GetInvitationsByEventID retrieves all invitations for a specific event
 func (r *Repository) GetInvitationsByEventID(ctx context.Context, eventID int) ([]InvitationWithDetails, error) {
 	query := `
         SELECT 
@@ -203,6 +209,7 @@ func (r *Repository) GetInvitationsByEventID(ctx context.Context, eventID int) (
 	return invitations, nil
 }
 
+// UpdateInvitationStatus updates the status of an invitation
 func (r *Repository) UpdateInvitationStatus(ctx context.Context, invitationID int, status string) error {
 	query := `
         UPDATE invitations
@@ -218,6 +225,7 @@ func (r *Repository) UpdateInvitationStatus(ctx context.Context, invitationID in
 	return nil
 }
 
+// GetUserIDByEmail retrieves user ID by email (helper function)
 func (r *Repository) GetUserIDByEmail(ctx context.Context, email string) (*int, error) {
 	query := `SELECT id FROM users WHERE email = $1`
 
@@ -230,4 +238,3 @@ func (r *Repository) GetUserIDByEmail(ctx context.Context, email string) (*int, 
 
 	return &userID, nil
 }
-

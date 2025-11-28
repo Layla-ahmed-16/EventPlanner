@@ -9,16 +9,17 @@ import (
 	"event-planner/internal/auth"
 )
 
+// Handler handles HTTP requests for events
 type Handler struct {
 	service *Service
 }
 
-//create new event handler
+// NewHandler creates a new event handler
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-//POST /events
+// CreateEvent handles POST /events
 func (h *Handler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	// Get organizer ID from context (set by auth middleware)
 	organizerID, ok := auth.GetUserID(r.Context())
@@ -47,7 +48,7 @@ func (h *Handler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//GET /events/:id
+// GetEventByID handles GET /events/:id
 func (h *Handler) GetEventByID(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	eventID, err := strconv.Atoi(idStr)
@@ -69,7 +70,7 @@ func (h *Handler) GetEventByID(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//GET /events
+// GetAllEvents handles GET /events
 func (h *Handler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
 	events, err := h.service.GetAllEvents(r.Context())
 	if err != nil {
@@ -84,7 +85,7 @@ func (h *Handler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//GET /events/organizer/:id
+// GetEventsByOrganizer handles GET /events/organizer/:id
 func (h *Handler) GetEventsByOrganizer(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	organizerID, err := strconv.Atoi(idStr)
@@ -106,7 +107,7 @@ func (h *Handler) GetEventsByOrganizer(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//PUT /events/:id
+// UpdateEvent handles PUT /events/:id
 func (h *Handler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context (set by auth middleware)
 	userID, ok := auth.GetUserID(r.Context())
@@ -146,7 +147,7 @@ func (h *Handler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//DELETE /events/:id
+// DeleteEvent handles DELETE /events/:id
 func (h *Handler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context (set by auth middleware)
 	userID, ok := auth.GetUserID(r.Context())
@@ -179,7 +180,7 @@ func (h *Handler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//POST /events/:id/join
+// JoinEvent handles POST /events/:id/join
 func (h *Handler) JoinEvent(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context (set by auth middleware)
 	userID, ok := auth.GetUserID(r.Context())
@@ -208,7 +209,7 @@ func (h *Handler) JoinEvent(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//GET /events/my/attending
+// GetMyAttendingEvents handles GET /events/my/attending
 func (h *Handler) GetMyAttendingEvents(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context (set by auth middleware)
 	userID, ok := auth.GetUserID(r.Context())
@@ -230,7 +231,7 @@ func (h *Handler) GetMyAttendingEvents(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//GET /events/my/organized
+// GetMyOrganizedEvents handles GET /events/my/organized
 func (h *Handler) GetMyOrganizedEvents(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context (set by auth middleware)
 	userID, ok := auth.GetUserID(r.Context())
@@ -252,7 +253,7 @@ func (h *Handler) GetMyOrganizedEvents(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//POST /events/{id}/invite
+// InviteUserToEvent handles POST /events/{id}/invite
 func (h *Handler) InviteUserToEvent(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context (set by auth middleware)
 	inviterID, ok := auth.GetUserID(r.Context())
@@ -292,7 +293,7 @@ func (h *Handler) InviteUserToEvent(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//PUT /events/{id}/attendance
+// UpdateAttendanceStatus handles PUT /events/{id}/attendance
 func (h *Handler) UpdateAttendanceStatus(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context (set by auth middleware)
 	userID, ok := auth.GetUserID(r.Context())
@@ -327,7 +328,7 @@ func (h *Handler) UpdateAttendanceStatus(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-//GET /events/{id}/attendees
+// GetEventAttendees handles GET /events/{id}/attendees
 func (h *Handler) GetEventAttendees(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	eventID, err := strconv.Atoi(idStr)
@@ -348,4 +349,3 @@ func (h *Handler) GetEventAttendees(w http.ResponseWriter, r *http.Request) {
 		"data": attendees,
 	})
 }
-

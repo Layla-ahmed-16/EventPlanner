@@ -9,15 +9,17 @@ import (
 	"event-planner/internal/auth"
 )
 
+// Handler handles HTTP requests for invitations
 type Handler struct {
 	service *Service
 }
 
+// NewHandler creates a new invitation handler
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-//POST /invitations
+// SendInvitation handles POST /invitations
 func (h *Handler) SendInvitation(w http.ResponseWriter, r *http.Request) {
 	// Get inviter ID from context (set by auth middleware)
 	inviterID, ok := auth.GetUserID(r.Context())
@@ -46,9 +48,10 @@ func (h *Handler) SendInvitation(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//GET /invitations/my
+// GetMyInvitations handles GET /invitations/my
 func (h *Handler) GetMyInvitations(w http.ResponseWriter, r *http.Request) {
-	
+	// Get user email from context - we need to modify auth to include email
+	// For now, we'll get it from query parameter as a workaround
 	email := r.URL.Query().Get("email")
 	if email == "" {
 		http.Error(w, `{"error": "email parameter is required"}`, http.StatusBadRequest)
@@ -68,7 +71,7 @@ func (h *Handler) GetMyInvitations(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//GET /events/{id}/invitations
+// GetEventInvitations handles GET /events/{id}/invitations
 func (h *Handler) GetEventInvitations(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	eventID, err := strconv.Atoi(idStr)
@@ -90,7 +93,7 @@ func (h *Handler) GetEventInvitations(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-//PUT /invitations/{id}/respond
+// RespondToInvitation handles PUT /invitations/{id}/respond
 func (h *Handler) RespondToInvitation(w http.ResponseWriter, r *http.Request) {
 	// For now, we'll get email from query parameter
 	// In a complete implementation, you'd get this from the auth context
@@ -129,4 +132,3 @@ func (h *Handler) RespondToInvitation(w http.ResponseWriter, r *http.Request) {
 		"message": "invitation response recorded successfully",
 	})
 }
-
