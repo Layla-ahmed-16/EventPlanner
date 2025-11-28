@@ -86,7 +86,6 @@ func (s *Service) GetAllEvents(ctx context.Context) ([]Event, error) {
 		return nil, err
 	}
 
-	// Return empty slice instead of nil for JSON response
 	if events == nil {
 		events = []Event{}
 	}
@@ -105,7 +104,6 @@ func (s *Service) GetEventsByOrganizerID(ctx context.Context, organizerID int) (
 		return nil, err
 	}
 
-	// Return empty slice instead of nil for JSON response
 	if events == nil {
 		events = []Event{}
 	}
@@ -113,7 +111,6 @@ func (s *Service) GetEventsByOrganizerID(ctx context.Context, organizerID int) (
 	return events, nil
 }
 
-// UpdateEvent validates and updates an event
 func (s *Service) UpdateEvent(ctx context.Context, eventID int, req *UpdateEventRequest, organizerID int) (*Event, error) {
 	if eventID <= 0 {
 		return nil, fmt.Errorf("invalid event ID")
@@ -180,7 +177,6 @@ func (s *Service) DeleteEvent(ctx context.Context, eventID int, organizerID int)
 	return nil
 }
 
-// Validation helper functions
 
 func (s *Service) validateCreateRequest(req *CreateEventRequest) error {
 	if req.Title == "" {
@@ -274,7 +270,7 @@ func (s *Service) JoinEvent(ctx context.Context, userID, eventID int) error {
 	return nil
 }
 
-// GetMyAttendingEvents retrieves all events where the user is an attendee (including as organizer)
+// GetMyAttendingEvents retrieves all events where the user is an attendee 
 func (s *Service) GetMyAttendingEvents(ctx context.Context, userID int) ([]EventWithAttendeeInfo, error) {
 	if userID <= 0 {
 		return nil, fmt.Errorf("invalid user ID")
@@ -285,7 +281,7 @@ func (s *Service) GetMyAttendingEvents(ctx context.Context, userID int) ([]Event
 		return nil, err
 	}
 
-	// Return empty slice instead of nil for JSON response
+	
 	if events == nil {
 		events = []EventWithAttendeeInfo{}
 	}
@@ -293,7 +289,7 @@ func (s *Service) GetMyAttendingEvents(ctx context.Context, userID int) ([]Event
 	return events, nil
 }
 
-// InviteUserToEvent invites a user to an event (only event creator can invite)
+// InviteUserToEvent invites a user to an event 
 func (s *Service) InviteUserToEvent(ctx context.Context, eventID, inviterID int, req *AddAttendeeRequest) error {
 	if eventID <= 0 {
 		return fmt.Errorf("invalid event ID")
@@ -307,7 +303,7 @@ func (s *Service) InviteUserToEvent(ctx context.Context, eventID, inviterID int,
 		return fmt.Errorf("invalid user ID")
 	}
 
-	// Validate role - allowing 'organizer' role for co-organizers
+	// Validate role 
 	if req.Role != "attendee" && req.Role != "collaborator" && req.Role != "organizer" {
 		return fmt.Errorf("invalid role: must be 'attendee', 'collaborator', or 'organizer'")
 	}
@@ -318,12 +314,10 @@ func (s *Service) InviteUserToEvent(ctx context.Context, eventID, inviterID int,
 		return fmt.Errorf("event not found")
 	}
 
-	// Check if the inviter is the event creator
 	if event.OrganizerID != inviterID {
 		return fmt.Errorf("only the event creator can invite users to this event")
 	}
 
-	// Check if user is trying to invite themselves
 	if req.UserID == inviterID {
 		return fmt.Errorf("you cannot invite yourself to the event")
 	}
@@ -376,7 +370,6 @@ func (s *Service) GetEventAttendees(ctx context.Context, eventID int) ([]EventAt
 		return nil, err
 	}
 
-	// Return empty slice instead of nil for JSON response
 	if attendees == nil {
 		attendees = []EventAttendee{}
 	}
@@ -384,7 +377,6 @@ func (s *Service) GetEventAttendees(ctx context.Context, eventID int) ([]EventAt
 	return attendees, nil
 }
 
-// GetMyOrganizedEvents retrieves all events organized by a specific user
 func (s *Service) GetMyOrganizedEvents(ctx context.Context, organizerID int) ([]Event, error) {
 	if organizerID <= 0 {
 		return nil, fmt.Errorf("invalid organizer ID")
@@ -395,10 +387,10 @@ func (s *Service) GetMyOrganizedEvents(ctx context.Context, organizerID int) ([]
 		return nil, err
 	}
 
-	// Return empty slice instead of nil for JSON response
 	if events == nil {
 		events = []Event{}
 	}
 
 	return events, nil
 }
+
