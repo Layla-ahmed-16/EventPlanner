@@ -6,20 +6,15 @@ import (
 	"regexp"
 	"strings"
 )
-
-// EventAttendeeService defines the minimal interface needed to add an attendee to an event.
-// This is implemented by the event.Repository in the event package.
 type EventAttendeeService interface {
 	AddAttendee(ctx context.Context, eventID, userID int, role string) error
 }
 
-// Service handles business logic for invitations
 type Service struct {
 	repo            *Repository
 	attendeeService EventAttendeeService
 }
 
-// NewService creates a new invitation service
 func NewService(repo *Repository, attendeeService EventAttendeeService) *Service {
 	return &Service{
 		repo:            repo,
@@ -27,7 +22,7 @@ func NewService(repo *Repository, attendeeService EventAttendeeService) *Service
 	}
 }
 
-// SendInvitation validates and sends an invitation
+//validates and sends an invitation
 func (s *Service) SendInvitation(ctx context.Context, req *SendInvitationRequest, inviterID int) (*Invitation, error) {
 	// Validate input
 	if err := s.validateSendInvitationRequest(req); err != nil {
@@ -57,7 +52,7 @@ func (s *Service) SendInvitation(ctx context.Context, req *SendInvitationRequest
 	return invitation, nil
 }
 
-// GetMyInvitations retrieves all invitations for a user by email
+//retrieves all invitations for a user by email
 func (s *Service) GetMyInvitations(ctx context.Context, email string) ([]InvitationWithDetails, error) {
 	invitations, err := s.repo.GetInvitationsByEmail(ctx, email)
 	if err != nil {
@@ -72,50 +67,41 @@ func (s *Service) GetMyInvitations(ctx context.Context, email string) ([]Invitat
 	return invitations, nil
 }
 
-// GetEventInvitations retrieves all invitations for a specific event
+//retrieves all invitations for a specific event
 func (s *Service) GetEventInvitations(ctx context.Context, eventID int) ([]InvitationWithDetails, error) {
 	invitations, err := s.repo.GetInvitationsByEventID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
-
-	// Return empty slice instead of nil for JSON response
 	if invitations == nil {
 		invitations = []InvitationWithDetails{}
 	}
 
 	return invitations, nil
 }
-
-// RespondToInvitation allows a user to accept or decline an invitation
 func (s *Service) RespondToInvitation(ctx context.Context, invitationID int, status string, userEmail string) error {
 	// Validate status
 	if status != "accepted" && status != "declined" {
 		return fmt.Errorf("invalid status: must be 'accepted' or 'declined'")
 	}
-
-	// Get the invitation to verify ownership
+	
 	invitation, err := s.repo.GetInvitationByID(ctx, invitationID)
 	if err != nil {
 		return fmt.Errorf("invitation not found: %w", err)
 	}
 
-	// Check if the user is the invitee
 	if invitation.InviteeEmail != userEmail {
 		return fmt.Errorf("you are not authorized to respond to this invitation")
 	}
 
-	// Check if invitation is still pending
 	if invitation.Status != "pending" {
 		return fmt.Errorf("invitation has already been responded to")
 	}
 
-	// Update invitation status
 	if err := s.repo.UpdateInvitationStatus(ctx, invitationID, status); err != nil {
 		return err
 	}
 
-	// If accepted and we know the user ID, add them to event attendees
 	if status == "accepted" && invitation.InviteeID != nil && s.attendeeService != nil {
 		if err := s.attendeeService.AddAttendee(ctx, invitation.EventID, *invitation.InviteeID, invitation.Role); err != nil {
 			return fmt.Errorf("failed to add invitee as attendee: %w", err)
@@ -124,8 +110,6 @@ func (s *Service) RespondToInvitation(ctx context.Context, invitationID int, sta
 
 	return nil
 }
-
-// Validation helper functions
 
 func (s *Service) validateSendInvitationRequest(req *SendInvitationRequest) error {
 	if req.EventID <= 0 {
@@ -160,3 +144,4 @@ func (s *Service) isValidEmail(email string) bool {
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	return emailRegex.MatchString(email)
 }
+
