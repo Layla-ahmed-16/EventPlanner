@@ -22,7 +22,7 @@ func NewService(db *pgxpool.Pool) *Service {
 	return &Service{db: db}
 }
 
-// Register creates a new user account
+//create account
 func (s *Service) Register(ctx context.Context, req user.RegisterRequest) (*user.AuthResponse, error) {
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -49,7 +49,7 @@ func (s *Service) Register(ctx context.Context, req user.RegisterRequest) (*user
 	}, nil
 }
 
-// Login authenticates a user and returns a token
+// authenticate user & return a token
 func (s *Service) Login(ctx context.Context, req user.LoginRequest) (*user.AuthResponse, error) {
 	var u user.User
 	query := `SELECT id, email, password_hash, created_at FROM users WHERE email = $1`
@@ -70,15 +70,13 @@ func (s *Service) Login(ctx context.Context, req user.LoginRequest) (*user.AuthR
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
 
-	// Clear password hash before returning
+	// Clear password hash
 	u.PasswordHash = ""
 
 	return &user.AuthResponse{
 		Token: token,
 	}, nil
 }
-
-// generateToken creates a JWT token for the user
 func (s *Service) generateToken(userID int) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
@@ -94,7 +92,6 @@ func (s *Service) generateToken(userID int) (string, error) {
 	return token.SignedString([]byte(jwtSecret))
 }
 
-// ValidateToken validates and parses a JWT token
 func (s *Service) ValidateToken(tokenString string) (int, error) {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
@@ -122,3 +119,4 @@ func (s *Service) ValidateToken(tokenString string) (int, error) {
 
 	return 0, errors.New("invalid token")
 }
+
