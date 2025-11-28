@@ -2,11 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"log"
+	"net/http"
+
 	"event-planner/internal/auth"
 	"event-planner/internal/db"
 	"event-planner/internal/event"
-	"log"
-	"net/http"
+	"event-planner/internal/invitation"
+	"event-planner/internal/search"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -14,55 +17,78 @@ import (
 )
 
 func main() {
-	godotenv.Load()
+	// Load .env file
+	_ = godotenv.Load()
 
+	// Connect to PostgreSQL
 	pool, err := db.ConnectDB()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer pool.Close()
 
-	// Initialize services and handlers
+	// ==== Auth setup (Requirement 1: User Management) ====
 	authService := auth.NewService(pool)
 	authHandler := auth.NewHandler(authService)
 
+	// ==== Event setup (Requirement 2: Event Management) ====
+	eventRepo := event.NewRepository(pool)
+	eventService := event.NewService(eventRepo)
+	eventHandler := event.NewHandler(eventService)
+
+	// ==== Invitation setup (Requirement 3: Response Management / Invitations) ====
+	invRepo := invitation.NewRepository(pool)
+	invService := invitation.NewService(invRepo)
+	invHandler := invitation.NewHandler(invService)
+
+	// ==== Search setup (Requirement 4: Search & Filtering) ====
+	searchRepo := search.NewRepository(pool)
+	searchService := search.NewService(searchRepo)
+	searchHandler := search.NewHandler(searchService)
+
+	// Setup router
 	r := chi.NewRouter()
 
-	// Middleware
+	// Global middleware
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
 
-	// Public routes
+	// Health check
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Server is running"))
 	})
 
-	// Auth routes
+	// ===== Auth routes =====
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", authHandler.Register)
 		r.Post("/login", authHandler.Login)
 	})
 
-	eventRepo := event.NewRepository(pool)
-	eventService := event.NewService(eventRepo)
-	eventHandler := event.NewHandler(eventService)
-
+	// ===== Events routes (Req 2) =====
 	r.Route("/events", func(r chi.Router) {
 		// Public endpoints (no auth required)
+
 		// GET all events
 		r.Get("/", eventHandler.GetAllEvents)
 
-		// GET events by organizer
+		// 🔍 Advanced search (Req 4 – uses search package, needs auth)
+		r.With(authHandler.AuthMiddleware).Get("/search", searchHandler.SearchEvents)
+
+		// GET events by organizer (public)
 		r.Get("/organizer/{id}", eventHandler.GetEventsByOrganizer)
 
-		// GET single event by ID
+		// GET single event by ID (public)
 		r.Get("/{id}", eventHandler.GetEventByID)
 
-		// GET event attendees
+		// GET event attendees (public أو تخليها protected لو حابب)
 		r.Get("/{id}/attendees", eventHandler.GetEventAttendees)
 
+		// GET invitations for an event (logical to protect)
+		r.With(authHandler.AuthMiddleware).Get("/{id}/invitations", invHandler.GetEventInvitations)
+
 		// Protected endpoints (auth required)
+
 		// POST create new event (requires auth)
 		r.With(authHandler.AuthMiddleware).Post("/", eventHandler.CreateEvent)
 
@@ -93,11 +119,24 @@ func main() {
 		})
 	})
 
-	// Protected routes
+	// ===== Invitation routes (Req 3) =====
+	r.Route("/invitations", func(r chi.Router) {
+		r.Use(authHandler.AuthMiddleware)
+
+		// Send invitation
+		r.Post("/", invHandler.SendInvitation)
+
+		// Get my invitations
+		r.Get("/my", invHandler.GetMyInvitations)
+
+		// Respond to invitation
+		r.Put("/{id}/respond", invHandler.RespondToInvitation)
+	})
+
+	// ===== Example protected API group =====
 	r.Route("/api", func(r chi.Router) {
 		r.Use(authHandler.AuthMiddleware)
 
-		// Example protected route
 		r.Get("/profile", func(w http.ResponseWriter, r *http.Request) {
 			userID, ok := auth.GetUserID(r.Context())
 			if !ok {
@@ -105,20 +144,17 @@ func main() {
 				return
 			}
 
-			response := map[string]interface{}{
+			resp := map[string]interface{}{
 				"message": "This is a protected route",
 				"user_id": userID,
 			}
-
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(response)
+			json.NewEncoder(w).Encode(resp)
 		})
-	})
-	// Health check
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Server is running"))
 	})
 
 	log.Println("Server started on :8080")
-	http.ListenAndServe(":8080", r)
+	if err := http.ListenAndServe(":8080", r); err != nil {
+		log.Fatal(err)
+	}
 }
