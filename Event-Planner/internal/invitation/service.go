@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-// EventAttendeeService defines the minimal interface needed to add an attendee to an event.
-// This is implemented by the event.Repository in the event package.
 type EventAttendeeService interface {
 	AddAttendee(ctx context.Context, eventID, userID int, role string) error
 }
@@ -160,3 +158,4 @@ func (s *Service) isValidEmail(email string) bool {
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	return emailRegex.MatchString(email)
 }
+
