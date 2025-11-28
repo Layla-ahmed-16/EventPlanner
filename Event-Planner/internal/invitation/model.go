@@ -2,7 +2,6 @@ package invitation
 
 import "time"
 
-// Invitation represents an invitation to an event
 type Invitation struct {
 	ID           int        `json:"id"`
 	EventID      int        `json:"event_id"`
@@ -16,7 +15,6 @@ type Invitation struct {
 	RespondedAt  *time.Time `json:"responded_at,omitempty"`
 }
 
-// InvitationWithDetails includes event and inviter details
 type InvitationWithDetails struct {
 	Invitation
 	EventTitle    string `json:"event_title"`
@@ -26,7 +24,6 @@ type InvitationWithDetails struct {
 	InviterEmail  string `json:"inviter_email"`
 }
 
-// SendInvitationRequest is the request payload for sending invitations
 type SendInvitationRequest struct {
 	EventID      int    `json:"event_id" binding:"required"`
 	InviteeEmail string `json:"invitee_email" binding:"required"`
@@ -34,7 +31,7 @@ type SendInvitationRequest struct {
 	Message      string `json:"message,omitempty"`
 }
 
-// RespondToInvitationRequest is the request payload for responding to invitations
 type RespondToInvitationRequest struct {
 	Status string `json:"status" binding:"required"` // 'accepted' or 'declined'
 }
+
