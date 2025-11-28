@@ -72,7 +72,7 @@ func main() {
 		// GET all events
 		r.Get("/", eventHandler.GetAllEvents)
 
-		// 🔍 Advanced search (Req 4 – uses search package, needs auth)
+		// Advanced search (Req 4 – uses search package, needs auth)
 		r.With(authHandler.AuthMiddleware).Get("/search", searchHandler.SearchEvents)
 
 		// GET events by organizer (public)
@@ -158,3 +158,4 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
