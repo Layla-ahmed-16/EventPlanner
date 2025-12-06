@@ -1,0 +1,13 @@
+# Dockerfile.db
+FROM postgres:16-alpine
+
+# DB ENVIRONMENT VARIABLES
+ENV POSTGRES_USER=postgres \
+    POSTGRES_PASSWORD=postgres \
+    POSTGRES_DB=event_planner
+
+# Copy the initialization script to the container
+COPY schema.sql /docker-entrypoint-initdb.d/schema.sql
+
+# Define the volume for persistent storage
+VOLUME ["/var/lib/postgresql/data"]
